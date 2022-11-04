@@ -12,11 +12,8 @@
     "128": "icon.png"
   },
 
-  "permissions": [
-    "tabs",
-    "activeTab",
-    "storage"
-  ],
+  "permissions": [ "history","storage", "activeTab", "scripting", "tabs","alarms", "tabGroups"],
+  "host_permissions": ["*://*/*"],
   "options_page": "options.html",
   "action": {
     "default_popup": "popup.html"
