@@ -12,6 +12,7 @@
     "popup"
   ],
   "devDependencies": {
+    "typescript": "^4.8.4",
     "web-ext": "^6.6.0"
   }
 }

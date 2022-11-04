@@ -26,9 +26,12 @@ let windowSessions = {
 };
 const DEBUG = true;
 setTimeout(() => {
+    DEBUG && console.log("HELLO")
   DEBUG && console.log(currentWindowId);
   DEBUG && console.log(windowSessions);
-}, 1000);
+  
+  DEBUG && console.log("BYE")
+}, 500);
 
 chrome.runtime.onInstalled.addListener(async () => {
   chrome.storage.sync.set({ mode: "on" }, function () {});
