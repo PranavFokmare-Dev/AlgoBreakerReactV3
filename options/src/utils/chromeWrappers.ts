@@ -1,9 +1,12 @@
-export async function getHistory() {
-    let history = await getFromStorage("history");
+import { IHistory } from "./models";
+
+export async function getHistory(): Promise<IHistory> {
+    let history = (await getFromStorage("history")) as IHistory;
     return history === undefined || history == null ? {} : history;
   }
   
-  export function getFromStorage(key:string) {
+
+  export function getFromStorage(key: string) {
     return new Promise((resolve, reject) => {
       chrome.storage.sync.get([key], function (result) {
         const value = result[key];

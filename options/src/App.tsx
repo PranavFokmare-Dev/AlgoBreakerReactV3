@@ -1,7 +1,8 @@
 import React, { FC, useEffect , useState} from 'react';
 import { getHistory } from './utils/chromeWrappers';
+import { IHistory } from './utils/models';
 const App: FC = () => {
-  const [history,setHistory] = useState({});
+  const [history,setHistory] = useState<IHistory>({});
   useEffect(()=>{
     getHistory().then(h =>{ 
       console.log(h);
