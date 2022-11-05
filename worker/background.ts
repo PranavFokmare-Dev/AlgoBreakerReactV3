@@ -25,6 +25,10 @@ let windowSessions = {
   //}
 };
 const DEBUG = true;
+const BUTTON_CLICK_DEBUG= false;
+const ACTIVE_TAB_DEBUG = false;
+const UPDATE_TAB_DEBUG = false;
+const DELETE_TAB_DEBUG = false;
 chrome.alarms.create("Debug",{
  periodInMinutes:1
 });
@@ -35,13 +39,7 @@ chrome.alarms.onAlarm.addListener(async (alarm)=>{
   DEBUG && console.log(await getHistory());
   DEBUG && console.log("BYE")
 })
-setTimeout(() => {
-    DEBUG && console.log("HELLO")
-  DEBUG && console.log(currentWindowId);
-  DEBUG && console.log(windowSessions);
-  
-  DEBUG && console.log("BYE")
-}, 500);
+
 
 chrome.runtime.onInstalled.addListener(async () => {
   chrome.storage.sync.set({ mode: "on" }, function () {});
@@ -62,10 +60,10 @@ chrome.runtime.onMessage.addListener(async function (
 ) {
   AlgoBreakerMain(request.mode, request.tabId, request.tabUrl);
 
-  console.log("SUMMARY");
-  console.log(currentWindowId);
-  console.log(windowSessions);
-  console.log(await getHistory());
+  BUTTON_CLICK_DEBUG && console.log("SUMMARY");
+  BUTTON_CLICK_DEBUG && console.log(currentWindowId);
+  BUTTON_CLICK_DEBUG && console.log(windowSessions);
+  BUTTON_CLICK_DEBUG && console.log(await getHistory());
 });
 
 //Change in URL|tab created changed url
@@ -179,7 +177,7 @@ async function endSession(tabId, windowId) {
   }
 }
 chrome.tabs.onActivated.addListener(async function (activeInfo) {
-  console.log("Active" + activeInfo.tabId);
+  ACTIVE_TAB_DEBUG && console.log("Active" + activeInfo.tabId);
   let tabId = activeInfo.tabId;
   let windowId = activeInfo.windowId;
   let windowSession = getOrCreateWindowSession(windowId);
@@ -221,7 +219,7 @@ function getOrCreateWindowSession(windowId) {
 chrome.tabs.onUpdated.addListener(async function (tabId, changeInfo, tab) {
   const notUpdatedToNewTab = tab.url != analyticsEnum.newTabUrl;
 
-  console.log("update" + tabId);
+  UPDATE_TAB_DEBUG && console.log("update" + tabId);
   let windowId = tab.windowId;
   let window = getOrCreateWindowSession(windowId);
   let tabSessions = window.tabSessions;
@@ -265,8 +263,8 @@ chrome.tabs.onUpdated.addListener(async function (tabId, changeInfo, tab) {
   }
 
   function initalizeInactiveSession() {
-    console.log("middle click");
-    console.log(tab);
+    UPDATE_TAB_DEBUG && console.log("middle click");
+    UPDATE_TAB_DEBUG && console.log(tab);
     tabSessions[tabId] = {
       url: getHostName(tab.url),
       startTime: 0,
@@ -291,7 +289,7 @@ chrome.tabs.onUpdated.addListener(async function (tabId, changeInfo, tab) {
 //   }
 
 chrome.tabs.onRemoved.addListener(async function (closingTabID, removedInfo) {
-  console.log("closed" + closingTabID);
+  DELETE_TAB_DEBUG && console.log("closed" + closingTabID);
   const windowId = removedInfo.windowId;
   const window = windowSessions[windowId];
   if (window != undefined) {
