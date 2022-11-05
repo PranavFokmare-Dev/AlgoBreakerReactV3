@@ -25,6 +25,16 @@ let windowSessions = {
   //}
 };
 const DEBUG = true;
+chrome.alarms.create("Debug",{
+ periodInMinutes:1
+});
+chrome.alarms.onAlarm.addListener(async (alarm)=>{
+  DEBUG && console.log("HELLO")
+  DEBUG && console.log(currentWindowId);
+  DEBUG && console.log(windowSessions);
+  DEBUG && console.log(await getHistory());
+  DEBUG && console.log("BYE")
+})
 setTimeout(() => {
     DEBUG && console.log("HELLO")
   DEBUG && console.log(currentWindowId);
