@@ -25,7 +25,7 @@ let windowSessions = {
   //}
 };
 const DEBUG = true;
-const BUTTON_CLICK_DEBUG= false;
+const BUTTON_CLICK_DEBUG= true;
 const ACTIVE_TAB_DEBUG = false;
 const UPDATE_TAB_DEBUG = false;
 const DELETE_TAB_DEBUG = false;
