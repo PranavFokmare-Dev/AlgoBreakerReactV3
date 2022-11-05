@@ -29,9 +29,10 @@ interface ITabSessionDetails{
   startTime: number;
   endTime: number;
 }
-interface IHistory {
+interface IAnalyticsHistory {
   [url: string]: number;
 }
+   
 let currentWindowId = -1;
 let windowSessions: IWindowSesion = {
   //windowId -> {
@@ -54,7 +55,7 @@ chrome.alarms.onAlarm.addListener(async (alarm) => {
   DEBUG && console.log("HELLO");
   DEBUG && console.log(currentWindowId);
   DEBUG && console.log(windowSessions);
-  DEBUG && console.log(await getHistory());
+  DEBUG && console.log(await getTimeSpentHistory());
   DEBUG && console.log("BYE");
 });
 
@@ -62,7 +63,8 @@ chrome.runtime.onInstalled.addListener(async () => {
   chrome.storage.sync.set({ mode: "on" }, function () {});
   console.log("runtime on installed");
   await setInStorage({ mode: "on" });
-  await saveHistory({});
+  await saveTimeSpenHistory({});
+  await saveLaunchesHistory({});
   const weekDurationInMins = 7 * 24 * 60;
   chrome.alarms.create(analyticsEnum.historyRemoverAlarmName, {
     periodInMinutes: weekDurationInMins,
@@ -80,7 +82,7 @@ chrome.runtime.onMessage.addListener(async function (
   BUTTON_CLICK_DEBUG && console.log("SUMMARY");
   BUTTON_CLICK_DEBUG && console.log(currentWindowId);
   BUTTON_CLICK_DEBUG && console.log(windowSessions);
-  BUTTON_CLICK_DEBUG && console.log(await getHistory());
+  BUTTON_CLICK_DEBUG && console.log(await getTimeSpentHistory());
 });
 
 //Change in URL|tab created changed url
@@ -90,7 +92,20 @@ chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
     AlgoBreakerMain(mode, tab.id??0, tab.url??"noURL");
   });
 });
-
+chrome.tabs.onUpdated.addListener(async (tabId, changeInfo, tab)=>{
+  await handleLaunches(tab);
+})
+async function handleLaunches(tab:chrome.tabs.Tab){
+  
+  if(tab.status == "complete" && tab.url!=undefined){
+    const launches = await getLaunchesHistory();
+    if(launches[tab.url]===undefined){
+      launches[tab.url]=0;
+    }
+    launches[tab.url]++;
+    await saveLaunchesHistory(launches);
+  }
+}
 function AlgoBreakerMain(mode:"on"|"off", tabId:number, url:string) {
   if (mode === "on") AlgoBreakerOn(tabId);
   else AlgoBreakerOff(tabId);
@@ -185,12 +200,12 @@ async function endSession(tabId: number, windowId: number) {
     return Date.now() - session.startTime;
   }
   async function updateHistory() {
-    let history = await getHistory();
-    if (history[session.url] === undefined) {
-      history[session.url] = 0;
+    let timeSpentHistory = await getTimeSpentHistory();
+    if (timeSpentHistory[session.url] === undefined) {
+      timeSpentHistory[session.url] =0;
     }
-    history[session.url] += Math.max(timeSpent, 0);
-    await saveHistory(history);
+    timeSpentHistory[session.url] += Math.max(timeSpent, 0);
+    await saveTimeSpenHistory(timeSpentHistory);
   }
 }
 chrome.tabs.onActivated.addListener(async function (activeInfo) {
@@ -311,15 +326,21 @@ chrome.tabs.onRemoved.addListener(async function (closingTabID, removedInfo) {
   }
 });
 
-async function getHistory(): Promise<IHistory> {
-  let history = (await getFromStorage("history")) as IHistory;
+async function getTimeSpentHistory(): Promise<IAnalyticsHistory> {
+  let history = (await getFromStorage("timeSpentHistory")) as IAnalyticsHistory;
+  return history === undefined || history == null ? {} : history;
+}
+async function getLaunchesHistory(): Promise<IAnalyticsHistory> {
+  let history = (await getFromStorage("launchesHistory")) as IAnalyticsHistory;
   return history === undefined || history == null ? {} : history;
 }
 
-async function saveHistory(history: IHistory) {
-  await setInStorage({ history: history });
+async function saveTimeSpenHistory(history: IAnalyticsHistory) {
+  await setInStorage({ timeSpentHistory: history });
 }
-
+async function saveLaunchesHistory(history: IAnalyticsHistory) {
+  await setInStorage({ launchesHistory: history });
+}
 function getFromStorage(key: string) {
   return new Promise((resolve, reject) => {
     chrome.storage.sync.get([key], function (result) {
@@ -358,6 +379,6 @@ function getHostName(url:string) {
 chrome.alarms.onAlarm.addListener(async function (alarm) {
   if (alarm.name === analyticsEnum.historyRemoverAlarmName) {
     console.log("removing History");
-    await saveHistory({});
+    await saveTimeSpenHistory({});
   }
 });
