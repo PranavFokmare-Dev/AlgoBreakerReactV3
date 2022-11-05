@@ -24,6 +24,7 @@ const App: FC = () => {
   return (<div>
     <h1>AlgoBreaker</h1>
     <button onClick = {clickHandler}>click to turn {(mode === ModeEnum.On)?"Off":"On"}</button>
+    <button onClick = {()=>chrome.runtime.openOptionsPage()}>Open Summary</button>
   </div>);
 };
 
