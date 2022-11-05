@@ -1,10 +1,13 @@
-import { IHistory } from "./models";
+import { IAnalyticsHistory } from "./models";
 
-export async function getHistory(): Promise<IHistory> {
-    let history = (await getFromStorage("history")) as IHistory;
-    return history === undefined || history == null ? {} : history;
-  }
-  
+export async function getTimeSpentHistory(): Promise<IAnalyticsHistory> {
+  let history = (await getFromStorage("timeSpentHistory")) as IAnalyticsHistory;
+  return history === undefined || history == null ? {} : history;
+}
+export async function getLaunchesHistory(): Promise<IAnalyticsHistory> {
+  let history = (await getFromStorage("launchesHistory")) as IAnalyticsHistory;
+  return history === undefined || history == null ? {} : history;
+}
 
   export function getFromStorage(key: string) {
     return new Promise((resolve, reject) => {

@@ -13,6 +13,7 @@ export interface IWindowSesion {
     startTime: number;
     endTime: number;
   }
-  export interface IHistory {
+  export interface IAnalyticsHistory {
     [url: string]: number;
   }
+  
