@@ -14,8 +14,26 @@ const webPage = {
   videoPlayerSideContent2: "#secondary",
 };
 
+interface IWindowSesion {
+  [windowId: number]: ITabInfo;
+}
+interface ITabInfo {
+  currentTabId: number;
+  tabSessions: ITabSession;
+}
+interface ITabSession {
+  [tabId: number]: ITabSessionDetails
+}
+interface ITabSessionDetails{
+  url: string;
+  startTime: number;
+  endTime: number;
+}
+interface IHistory {
+  [url: string]: number;
+}
 let currentWindowId = -1;
-let windowSessions = {
+let windowSessions: IWindowSesion = {
   //windowId -> {
   // currentTabId : 1
   // tabsessions : {
@@ -25,21 +43,20 @@ let windowSessions = {
   //}
 };
 const DEBUG = true;
-const BUTTON_CLICK_DEBUG= true;
+const BUTTON_CLICK_DEBUG = true;
 const ACTIVE_TAB_DEBUG = false;
 const UPDATE_TAB_DEBUG = false;
 const DELETE_TAB_DEBUG = false;
-chrome.alarms.create("Debug",{
- periodInMinutes:1
+chrome.alarms.create("Debug", {
+  periodInMinutes: 1,
 });
-chrome.alarms.onAlarm.addListener(async (alarm)=>{
-  DEBUG && console.log("HELLO")
+chrome.alarms.onAlarm.addListener(async (alarm) => {
+  DEBUG && console.log("HELLO");
   DEBUG && console.log(currentWindowId);
   DEBUG && console.log(windowSessions);
   DEBUG && console.log(await getHistory());
-  DEBUG && console.log("BYE")
-})
-
+  DEBUG && console.log("BYE");
+});
 
 chrome.runtime.onInstalled.addListener(async () => {
   chrome.storage.sync.set({ mode: "on" }, function () {});
@@ -70,16 +87,16 @@ chrome.runtime.onMessage.addListener(async function (
 chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
   chrome.storage.sync.get(["mode"], function (result) {
     const mode = result.mode;
-    AlgoBreakerMain(mode, tab.id, tab.url);
+    AlgoBreakerMain(mode, tab.id??0, tab.url??"noURL");
   });
 });
 
-function AlgoBreakerMain(mode, tabId, url) {
-  if (mode === "on") AlgoBreakerOn(url, tabId);
+function AlgoBreakerMain(mode:"on"|"off", tabId:number, url:string) {
+  if (mode === "on") AlgoBreakerOn(tabId);
   else AlgoBreakerOff(tabId);
 }
 
-function AlgoBreakerOn(url, tabId) {
+function AlgoBreakerOn(tabId:number) {
   const hideCss = `${webPage.homePage}{visibility:hidden}
   ${webPage.videoPlayerEndScreen}{visibility:hidden}
   ${webPage.videoPlayerSideContent}{visibility:hidden}
@@ -97,7 +114,7 @@ function AlgoBreakerOn(url, tabId) {
   );
 }
 
-function AlgoBreakerOff(tabId) {
+function AlgoBreakerOff(tabId:number) {
   const showCss = `${webPage.homePage}{visibility:visible}
     ${webPage.videoPlayerEndScreen}{visibility:visible}
     ${webPage.videoPlayerSideContent}{visibility:visible}
@@ -133,16 +150,16 @@ chrome.windows.onFocusChanged.addListener(async function (newWindowId) {
       console.log("CURRENT WINDOW ID Changed to ", currentWindowId);
     }
   }
-  function isBrowserNotInFocus(windowId) {
+  function isBrowserNotInFocus(windowId:number) {
     return windowId == -1;
   }
-  function windowSessionExists(windowId) {
+  function windowSessionExists(windowId:number) {
     return windowSessions[windowId] !== undefined;
   }
-  function isExistingBrowserWindow(newWindowId) {
+  function isExistingBrowserWindow(newWindowId:number) {
     return windowSessions[newWindowId] !== undefined;
   }
-  function startSessionForActiveTabIn(windowId) {
+  function startSessionForActiveTabIn(windowId:number) {
     let windowSession = windowSessions[windowId];
     const activeTabId = windowSession.currentTabId;
     const tabSessions = windowSession.tabSessions;
@@ -151,19 +168,19 @@ chrome.windows.onFocusChanged.addListener(async function (newWindowId) {
       `In the window ID ${windowId} for tab ${activeTabId} for Url ${tabSessions[activeTabId].url} started the session`
     );
   }
-  function getActiveTabInWindow(windowId) {
+  function getActiveTabInWindow(windowId:number) {
     const windowSession = windowSessions[windowId];
     return windowSession.currentTabId;
   }
 });
-async function endSession(tabId, windowId) {
+async function endSession(tabId: number, windowId: number) {
   let tabSessions = windowSessions[windowId].tabSessions;
   const session = tabSessions[tabId];
   const timeSpent = getTimeSpent(session);
   await updateHistory();
   session.startTime = 0;
 
-  function getTimeSpent(session) {
+  function getTimeSpent(session:ITabSessionDetails) {
     if (session.startTime === 0) return 0;
     return Date.now() - session.startTime;
   }
@@ -206,7 +223,7 @@ chrome.tabs.onActivated.addListener(async function (activeInfo) {
   }
 });
 
-function getOrCreateWindowSession(windowId) {
+function getOrCreateWindowSession(windowId:number) {
   if (windowSessions[windowId] === undefined) {
     windowSessions[windowId] = {
       currentTabId: -1,
@@ -247,7 +264,7 @@ chrome.tabs.onUpdated.addListener(async function (tabId, changeInfo, tab) {
   }
 
   function initializeSession() {
-    tabSessions[tabId].url = getHostName(tab.url);
+    tabSessions[tabId].url = getHostName(tab.url??"NO_URL");
     tabSessions[tabId].startTime = Date.now();
   }
 
@@ -255,7 +272,7 @@ chrome.tabs.onUpdated.addListener(async function (tabId, changeInfo, tab) {
     if (tabId === currentTabId) {
       await endSession(tabId, windowId);
       tabSessions[tabId] = {
-        url: getHostName(tab.url),
+        url: getHostName(tab.url??"NO_URL"),
         startTime: Date.now(),
         endTime: 0,
       };
@@ -266,27 +283,12 @@ chrome.tabs.onUpdated.addListener(async function (tabId, changeInfo, tab) {
     UPDATE_TAB_DEBUG && console.log("middle click");
     UPDATE_TAB_DEBUG && console.log(tab);
     tabSessions[tabId] = {
-      url: getHostName(tab.url),
+      url: getHostName(tab.url??"NO_URL"),
       startTime: 0,
       endTime: 0,
     };
   }
 });
-//   async function endTabSession(tabId) {
-//     const session = tabSessions[tabId];
-//     const timeSpent = Date.now() - session.startTime;
-//     await updateHistory();
-//     session.startTime = 0;
-
-//     async function updateHistory() {
-//       let history = await getHistory();
-//       if (history[session.url] === undefined) {
-//         history[session.url] = 0;
-//       }
-//       history[session.url] += Math.max(timeSpent, 0);
-//       await saveHistory(history);
-//     }
-//   }
 
 chrome.tabs.onRemoved.addListener(async function (closingTabID, removedInfo) {
   DELETE_TAB_DEBUG && console.log("closed" + closingTabID);
@@ -304,21 +306,21 @@ chrome.tabs.onRemoved.addListener(async function (closingTabID, removedInfo) {
     }
   }
 
-  function closingCurrentTab(closingTabID, currentTabId) {
+  function closingCurrentTab(closingTabID:number, currentTabId:number) {
     return closingTabID === currentTabId;
   }
 });
 
-async function getHistory() {
-  let history = await getFromStorage("history");
+async function getHistory(): Promise<IHistory> {
+  let history = (await getFromStorage("history")) as IHistory;
   return history === undefined || history == null ? {} : history;
 }
 
-async function saveHistory(history) {
+async function saveHistory(history: IHistory) {
   await setInStorage({ history: history });
 }
 
-function getFromStorage(key) {
+function getFromStorage(key: string) {
   return new Promise((resolve, reject) => {
     chrome.storage.sync.get([key], function (result) {
       const value = result[key];
@@ -339,7 +341,7 @@ function setInStorage(data) {
   });
 }
 
-function getTabInfo(tabId) {
+function getTabInfo(tabId:number) {
   return new Promise((resolve, reject) => {
     chrome.tabs.get(tabId, function (tab) {
       resolve(tab);
@@ -347,7 +349,7 @@ function getTabInfo(tabId) {
   });
 }
 
-function getHostName(url) {
+function getHostName(url:string) {
   const details = new URL(url);
   return details.hostname;
 }
