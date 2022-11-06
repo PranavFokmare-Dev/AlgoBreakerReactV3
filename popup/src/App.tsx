@@ -15,7 +15,7 @@ const App: FC = () => {
       setMode(toggledMode);
       chrome.storage.sync.set({ mode: toggledMode }, function () {
         chrome.runtime.sendMessage(
-          { tabId: tab.id, tabUrl: tab.url, mode: toggledMode },
+          { eventType:"BtnClick",tabId: tab.id, tabUrl: tab.url, mode: toggledMode },
           function (response) {}
         );
       });

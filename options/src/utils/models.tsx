@@ -1,19 +1,28 @@
-export interface IWindowSesion {
-    [windowId: number]: ITabInfo;
+export enum EventTypeEnum {
+  CLOSED = "closed",
+  OPENED = "opened"
+}
+export interface IAnalyticsEvent{
+  url:string,
+  windowId:number,
+  tabId:number,
+  date:string,
+  eventType:EventTypeEnum
+  host:string,
+  jsDateNow:number;
+}
+export interface IAnalyticsSummary{
+  [date:string]:IUrlData
+}
+export interface IUrlData{
+  [url:string]:{
+    launches:number,
+    timeSpent:number
   }
-  export interface ITabInfo {
-    currentTabId: number;
-    tabSessions: ITabSession;
+}
+export interface ITimeAnalysis{
+  [url:string]:{
+    startTime:number,
+    endTime:number
   }
-  export interface ITabSession {
-    [tabId: number]: ITabSessionDetails
-  }
-  export interface ITabSessionDetails{
-    url: string;
-    startTime: number;
-    endTime: number;
-  }
-  export interface IAnalyticsHistory {
-    [url: string]: number;
-  }
-  
+}
