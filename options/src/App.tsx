@@ -3,7 +3,6 @@ import { Route, Routes } from 'react-router';
 import Headder from './components/Headder';
 import Home from './components/Home';
 import Summary from './components/Summary';
-import { getAnalytics } from './utils/chromeWrappers';
 import { IAnalyticsSummary } from './utils/models';
 
 const App: FC = () => {
