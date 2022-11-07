@@ -1,23 +1,23 @@
 import React, { FC, useEffect, useState } from 'react';
+import { Route, Routes } from 'react-router';
+import Headder from './components/Headder';
+import Home from './components/Home';
+import Summary from './components/Summary';
 import { getAnalytics } from './utils/chromeWrappers';
 import { IAnalyticsSummary } from './utils/models';
 
 const App: FC = () => {
-  const [timeSpent, setTimeSpentHistory] = useState<IAnalyticsSummary>({});
-  useEffect(() => {
-    getAnalytics().then((h) => {
-      console.log(h);
-      setTimeSpentHistory(h);
-    });
-  }, []);
-  const display = JSON.stringify(timeSpent);
-  
   return (
-    <div>
-      hello from React on Options page!
-      <h1>TIME SPENT</h1>
-      <p>{display}</p>
-    </div>
+    <>
+      <Headder></Headder>
+      <main>
+        <Routes>
+          <Route index element={<Home />} />
+          <Route path="/summary" element={<Summary />} />
+          <Route path="*" element={<h1>404 not found</h1>} />
+        </Routes>
+      </main>
+    </>
   );
 };
 
