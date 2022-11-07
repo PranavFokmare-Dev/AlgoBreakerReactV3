@@ -21,6 +21,7 @@ let window_tab_map:{[windowId:number]:number}= {};
 let tempHistory:{[key:string]:string} = {}
 let lastOpenEvent = "";
 let lastClosedEvent = "";
+
 let windowIdsOpened :{[widnowId:number]:"OPENED"}={}
 const timeAnalysis:ITimeAnalysis = {};
 //GLOBAL DATA END
@@ -119,52 +120,53 @@ function AlgoBreakerOff(tabId:number) {
 }
 
 
-function analysisEventHandler(){
+
   chrome.tabs.onUpdated.addListener(handleUrlLoaded)
   chrome.tabs.onActivated.addListener(handleTabSwitch)
   chrome.tabs.onRemoved.addListener(handleTabClosed)
   chrome.windows.onFocusChanged.addListener(handleWindowSwitch)
 
-  function handleUrlLoaded(tabId:number, changeInfo:chrome.tabs.TabChangeInfo, tab:chrome.tabs.Tab){
+  async function handleUrlLoaded(tabId:number, changeInfo:chrome.tabs.TabChangeInfo, tab:chrome.tabs.Tab){
     EVENT_LOG_DEBUG && console.log("URL LOADED")
     if(changeInfo.status!==undefined && changeInfo.status== "complete"){
-      launchCloseIfLoadedinSameTab();
+      await launchCloseIfLoadedinSameTab();
       
       if(tab.active)
-        launchOpenEvent(tabId, tab.windowId, tab.url??"NO_URL");
+        await launchOpenEvent(tabId, tab.windowId, tab.url??"NO_URL");
       tempHistory[createKey(tabId,tab.windowId)]=tab.url??"NO_URL";
 
     }
 
 
-    function launchCloseIfLoadedinSameTab() {
+    async function launchCloseIfLoadedinSameTab() {
       if (currentWindowId2== tab.windowId 
         && tabId == window_tab_map[currentWindowId2] 
         && tab.url !== "chrome://newtab/"
         && tempHistory[createKey(tabId,tab.windowId)]!== undefined 
         && tempHistory[createKey(tabId,tab.windowId)]!== "chrome://newtab/") {
-        launchClosedEvent(tabId, tab.windowId);
+        await launchClosedEvent(tabId, tab.windowId);
       }
     }
   }
 
-  function handleTabSwitch({tabId, windowId}:chrome.tabs.TabActiveInfo){
+  async function handleTabSwitch({tabId, windowId}:chrome.tabs.TabActiveInfo){
     EVENT_LOG_DEBUG && console.log("TAB SWITCH")
     let oldTabId = window_tab_map[currentWindowId2]==undefined?-1:window_tab_map[currentWindowId2];
-    if(oldTabId!=-1 && lastClosedEvent!=createKey(oldTabId,currentWindowId2)){
-      launchClosedEvent(oldTabId, currentWindowId2);
+    if(oldTabId!=-1)
+    {
+      await launchClosedEvent(oldTabId, currentWindowId2);
     }
     if(tempHistory[createKey(tabId,windowId)]!== undefined) 
-      launchOpenEvent(tabId,windowId,tempHistory[createKey(tabId,windowId)]);
+      await launchOpenEvent(tabId,windowId,tempHistory[createKey(tabId,windowId)]);
     currentWindowId2 = windowId;
     window_tab_map[windowId]=tabId;
     windowIdsOpened[windowId]="OPENED";
   }
 
-  function handleTabClosed(tabId:number, {windowId,isWindowClosing}:chrome.tabs.TabRemoveInfo){
+  async function handleTabClosed(tabId:number, {windowId,isWindowClosing}:chrome.tabs.TabRemoveInfo){
     EVENT_LOG_DEBUG && console.log("TAB CLOSED");
     if(currentWindowId2 === windowId && window_tab_map[windowId]===tabId)
-      launchClosedEvent(tabId,windowId);
+      await launchClosedEvent(tabId,windowId);
     delete tempHistory[createKey(tabId, windowId)];
     if(isWindowClosing)
       delete windowIdsOpened[windowId];
@@ -176,7 +178,7 @@ function analysisEventHandler(){
     handleTabSwitch({windowId:windowId, tabId:window_tab_map[windowId]})
   }
 
-  function launchOpenEvent(tabId: number, windowId:number, url:string) {
+ async function launchOpenEvent(tabId: number, windowId:number, url:string) {
     if(url == "chrome://newtab/")return;
     lastOpenEvent = createKey(tabId,windowId);
     OPEN_CLOSE_DEBUG && console.log(`OPEN url:${url} tabId:${tabId} windowId:${windowId}  ${new Date()}`)
@@ -189,11 +191,13 @@ function analysisEventHandler(){
       host:getHostName(url),
       jsDateNow:Date.now()
     }
-    handleOpenEvent(openEvent); 
+    await handleOpenEvent(openEvent); 
   }
   
-  function launchClosedEvent(tabId: number, windowId: number) {
-    lastClosedEvent = createKey(tabId,windowId);
+ async function launchClosedEvent(tabId: number, windowId: number) {
+    if(tempHistory[createKey(tabId,windowId)]===undefined)return;
+    lastClosedEvent = `${createKey(tabId,windowId)}_${tempHistory[createKey(tabId,windowId)]}`;
+    
     OPEN_CLOSE_DEBUG && console.log(`CLOSED url:${tempHistory[createKey(tabId,windowId)]} tabId:${tabId} windowId:${windowId}  ${new Date()}`)
     let closedEvent:IAnalyticsEvent = {
       url:tempHistory[createKey(tabId,windowId)],
@@ -204,14 +208,8 @@ function analysisEventHandler(){
       host:getHostName(tempHistory[createKey(tabId,windowId)]),
       jsDateNow:Date.now()
     }  
-    handleClosedEvent(closedEvent);
+    await handleClosedEvent(closedEvent);
   }
-}
-
-
-analysisEventHandler();
-
-
 
 async function handleOpenEvent(openEvent:IAnalyticsEvent){
   const summary:IAnalyticsSummary = await getAnalytics();
@@ -237,7 +235,7 @@ async function handleOpenEvent(openEvent:IAnalyticsEvent){
 
 async function handleClosedEvent(closedEvent:IAnalyticsEvent){
   const summary:IAnalyticsSummary = await getAnalytics();
-  if(timeAnalysis[closedEvent.url]===undefined){
+  if(timeAnalysis[closedEvent.url]===undefined || closedEvent.url == undefined){
     console.log("ERROR NO TIME ANALYSIS");
     console.log(timeAnalysis);
     console.log(closedEvent.url);
@@ -246,6 +244,7 @@ async function handleClosedEvent(closedEvent:IAnalyticsEvent){
   }
   timeAnalysis[closedEvent.url].endTime=closedEvent.jsDateNow;
   summary[dateKey(closedEvent.jsDateNow)][closedEvent.host].timeSpent+=getTimeSpent(timeAnalysis,closedEvent.url);
+  console.log("TIME SPENT FOR ",closedEvent.host, summary[dateKey(closedEvent.jsDateNow)][closedEvent.host].timeSpent)
   await saveAnalytics(summary);
   //console.log("ANALYTICS CLOSE", summary);
   function getTimeSpent(timeAnalysis:ITimeAnalysis,url:string) {
