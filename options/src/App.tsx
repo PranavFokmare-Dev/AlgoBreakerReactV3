@@ -9,9 +9,11 @@ const App: FC = () => {
   return (
     <>
       <Headder></Headder>
-      <main>
+      <main className='main-container'>
         <Routes>
           <Route index element={<Home />} />
+          <Route path="/options.html" element={<Home />} />
+          <Route path="/Home" element={<Home />} />
           <Route path="/summary" element={<Summary />} />
           <Route path="*" element={<h1>404 not found</h1>} />
         </Routes>

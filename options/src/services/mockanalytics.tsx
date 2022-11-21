@@ -2,13 +2,19 @@ import { IAnalyticsSummary } from '../utils/models';
 
 export function getAnalytics(): Promise<IAnalyticsSummary> {
   const data: IAnalyticsSummary = {
-    '6_01_2022': {
-      'ab1c': { launches: 100, timeSpent: 1000 },
-      'bgd2': { launches: 100, timeSpent: 1000 },
-      'ged43': { launches: 100, timeSpent: 1000 },
-      'ds5a': { launches: 100, timeSpent: 1000 },
-      'ds4a': { launches: 100, timeSpent: 1000 },
-      'xy4z': { launches: 100, timeSpent: 1000 },
+    [dateKey(Date.now())]: {
+      'ab1c': { launches: randomNum(), timeSpent: randomNum() },
+      'bgd2': { launches: randomNum(), timeSpent: randomNum() },
+      'ged43': { launches: randomNum(), timeSpent: randomNum() },
+      'ds5a': { launches: randomNum(), timeSpent: randomNum() },
+      'ds4a': { launches: randomNum(), timeSpent: randomNum() },
+      'xy4z': { launches: randomNum(), timeSpent: randomNum() },
+      '123ab1c': { launches: randomNum(), timeSpent: randomNum() },
+      '1bgd2': { launches: randomNum(), timeSpent: randomNum() },
+      '1ged43': { launches: randomNum(), timeSpent: randomNum() },
+      '1ds5a': { launches: randomNum(), timeSpent: randomNum() },
+      'd1s4a': { launches: randomNum(), timeSpent: randomNum() },
+      '1xy4z': { launches: randomNum(), timeSpent: randomNum() },
     },
     '5_01_2022': {
       'abc1': { launches: 100, timeSpent: 1000 },
@@ -28,6 +34,10 @@ export function getAnalytics(): Promise<IAnalyticsSummary> {
 export function dateKey(jsDateNow:number):string{
     const d = new Date(jsDateNow);
     return `${d.getDate()}_${d.getMonth()}_${d.getFullYear()}`;
+  }
+
+  function randomNum(){
+   return  Math.floor(Math.random() * 1000);
   }
 
 // export async function getAnalytics():Promise<IAnalyticsSummary>{
