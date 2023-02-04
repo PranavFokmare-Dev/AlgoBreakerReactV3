@@ -3,6 +3,7 @@ import { getAnalytics } from '../../services/mockanalytics';
 import { IAnalyticsSummary, IUrlData } from '../../utils/models';
 import Card from '../cards/Card';
 import ListCard from '../cards/ListCard';
+import Example from '../chart/Example';
 
 const Overview = function ({ urls, urlSumarry, totalTimeSpent }: { urls: string[]; urlSumarry: IUrlData, totalTimeSpent:number }) {
   if(urlSumarry===undefined){
@@ -32,9 +33,7 @@ const Overview = function ({ urls, urlSumarry, totalTimeSpent }: { urls: string[
         <ListCard
           title="Total Launches"
           ListComponent={
-            <div>
-            <canvas id="myChart"></canvas>
-          </div>
+            <Example/>
           }
         />
       </div>
